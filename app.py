@@ -24,6 +24,10 @@ from keras.preprocessing.sequence import pad_sequences
 from sklearn.preprocessing import LabelEncoder
 
 import time
+try:
+    nltk.data.find('tokenizers/punkt')
+except LookupError:
+    nltk.download('punkt', quiet=True)
 
 # Exemplo de uso de barra de progresso
 nltk.download('punkt', quiet=True)
