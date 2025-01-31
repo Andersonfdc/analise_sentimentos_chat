@@ -22,6 +22,7 @@ from transformers import pipeline
 from tensorflow.keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
 from sklearn.preprocessing import LabelEncoder
+from keras.callbacks import Callback
 
 import time
 try:
@@ -154,14 +155,29 @@ if 'sentiment_model' not in st.session_state:
     st.session_state.sentiment_model = create_sentiment_model(embedding_matrix, vocab_size, embedding_dim, max_length)
     
 # Treinamento do modelo (apenas uma vez)
+class ProgressBarCallback(Callback):
+    def __init__(self, total_epochs):
+        self.total_epochs = total_epochs
+        self.progress_bar = st.progress(0)
+
+    def on_epoch_end(self, epoch, logs=None):
+        progress = (epoch + 1) / self.total_epochs
+        self.progress_bar.progress(progress)
+
 if not st.session_state.model_trained:
+    epochs = 10
+    progress_callback = ProgressBarCallback(total_epochs=epochs)
+
     st.session_state.sentiment_model.fit(
-        X_train_pad, 
+        X_train_pad,
         y_train_encoded,  # Usando rótulos codificados
-        epochs=10, 
-        batch_size=32, 
-        validation_split=0.1
+        epochs=epochs,  # Treina todas as épocas de uma vez
+        batch_size=32,
+        validation_split=0.1,
+        callbacks=[progress_callback],  # Adiciona o callback
+        verbose=0  # Evita a saída padrão do Keras
     )
+
     st.session_state.model_trained = True
 
 # Gerar previsões
