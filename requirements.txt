@@ -1,0 +1,13 @@
+streamlit
+gensim
+nltk
+numpy
+tensorflow
+matplotlib
+seaborn
+keras
+scikit-learn
+langdetect
+deep-translator
+pandas
+transformers
