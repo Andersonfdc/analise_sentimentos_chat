@@ -17,8 +17,6 @@ from deep_translator import GoogleTranslator
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, accuracy_score
 import pandas as pd
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
 from langdetect import detect
 from transformers import pipeline
 from tensorflow.keras.preprocessing.text import Tokenizer
@@ -33,6 +31,9 @@ nltk.download('punkt')
 nltk.download('stopwords')
 nltk.download('wordnet')
 nltk.download('nps_chat')
+
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
 
 sia = SentimentIntensityAnalyzer()
 stop_words = set(stopwords.words("portuguese"))
