@@ -11,3 +11,4 @@ langdetect
 deep-translator
 pandas
 transformers
+torch

@@ -198,7 +198,7 @@ y_pred_classes = np.argmax(y_pred, axis=1)  # Convertendo probabilidades em clas
 y_pred_labels = label_encoder.inverse_transform(y_pred_classes)
 
 # Função de análise de sentimento aprimorada
-sentiment_pipeline = pipeline("sentiment-analysis", model="nlptown/bert-base-multilingual-uncased-sentiment", framework="pt")
+sentiment_pipeline = pipeline("sentiment-analysis", model="nlptown/bert-base-multilingual-uncased-sentiment", framework="tf")
 
 def analyze_sentiment(text):
     result = sentiment_pipeline(text)[0]
