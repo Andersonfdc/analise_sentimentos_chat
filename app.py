@@ -1,4 +1,5 @@
 import streamlit as st
+import os
 import gensim
 import nltk
 import numpy as np
@@ -140,7 +141,7 @@ def create_sentiment_model(embedding_matrix, vocab_size, embedding_dim, max_leng
             output_dim=embedding_dim, 
             embeddings_initializer=tf.keras.initializers.Constant(embedding_matrix), 
             input_shape=(max_length,),  # Define o comprimento da sequência aqui
-            trainable=False
+            trainable=True  # Embeddings treináveis
         ),
         Bidirectional(LSTM(128, return_sequences=True)),
         Dropout(0.3),
@@ -164,21 +165,32 @@ class ProgressBarCallback(Callback):
         progress = (epoch + 1) / self.total_epochs
         self.progress_bar.progress(progress)
 
+# Carregar o modelo treinado
 if not st.session_state.model_trained:
     epochs = 10
     progress_callback = ProgressBarCallback(total_epochs=epochs)
 
     st.session_state.sentiment_model.fit(
         X_train_pad,
-        y_train_encoded,  # Usando rótulos codificados
-        epochs=epochs,  # Treina todas as épocas de uma vez
+        y_train_encoded,
+        epochs=epochs,
         batch_size=32,
         validation_split=0.1,
-        callbacks=[progress_callback],  # Adiciona o callback
-        verbose=0  # Evita a saída padrão do Keras
+        callbacks=[progress_callback],
+        verbose=0
     )
+    if os.path.exists("modelo.weights.h5"):
+        os.remove("modelo.weights.h5")
 
     st.session_state.model_trained = True
+    st.session_state.sentiment_model.save_weights("modelo.weights.h5")
+
+# Carregar os pesos
+if os.path.exists("modelo.weights.h5"):
+    # Reconstruir o modelo
+    st.session_state.sentiment_model = create_sentiment_model(embedding_matrix, vocab_size, embedding_dim, max_length)
+    # Carregar os pesos
+    st.session_state.sentiment_model.load_weights("modelo.weights.h5")
 
 # Gerar previsões
 y_pred = st.session_state.sentiment_model.predict(X_test_pad)
