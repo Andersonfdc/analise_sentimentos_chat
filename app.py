@@ -26,11 +26,11 @@ from sklearn.preprocessing import LabelEncoder
 import time
 
 # Exemplo de uso de barra de progresso
-nltk.download('vader_lexicon')
-nltk.download('punkt')
-nltk.download('stopwords')
-nltk.download('wordnet')
-nltk.download('nps_chat')
+nltk.download('punkt', quiet=True)
+nltk.download('stopwords', quiet=True)
+nltk.download('wordnet', quiet=True)
+nltk.download('vader_lexicon', quiet=True)
+nltk.download('nps_chat', quiet=True)
 
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
