@@ -24,7 +24,8 @@ from textblob import TextBlob
 from transformers import pipeline, Conversation
 from tensorflow.keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
-from keras.engine import Model
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Layer
 from sklearn.preprocessing import LabelEncoder
 from keras.callbacks import Callback
 import time
