@@ -28,6 +28,12 @@ from keras.callbacks import Callback
 import time
 import random
 
+st.set_page_config(
+page_title="ChatBot", 
+page_icon="	:robot_face:",
+)
+st.title("Análise de sentimentos - chatbot")
+
 nltk.download('punkt', quiet=True)
 nltk.download('punkt', quiet=True)
 nltk.download('stopwords', quiet=True)
@@ -59,19 +65,25 @@ st.info("📊 A funcionalidade de análise de sentimento (último gráfico à es
 
 with st.expander("Detalhes do Modelo"):
     st.write("""
-    Este código implementa um chatbot inteligente para análise de sentimentos e detecção de intenções usando Streamlit. O chatbot utiliza técnicas avançadas de Processamento de Linguagem Natural (PLN), incluindo:
+    Este código implementa um chatbot inteligente para análise de sentimentos e detecção de intenções usando Streamlit. O chatbot utiliza técnicas de Processamento de Linguagem Natural (PLN), incluindo:
     
-    - **Análise de Sentimento**: Agora utiliza um modelo LSTM treinado com dados de sentimento (arquivo `tw_pt.csv`).
+    - **Análise de Sentimento**: Utiliza um modelo LSTM treinado com dados de sentimento (arquivo `tw_pt.csv`) para classificar o sentimento das mensagens do usuário. Além disso, integra o `TextBlob` para uma análise complementar de polaridade.
     
-    - **Treinamento de Modelo LSTM para Intenções**: Cria e treina um modelo de rede neural recorrente (LSTM) usando embeddings do Word2Vec para detectar intenções em mensagens de usuários.
+    - **Detecção de Intenções**: Um modelo LSTM bidirecional é treinado com embeddings do Word2Vec para detectar intenções em mensagens de usuários. O modelo é capaz de identificar intenções como "saudação", "ajuda", "despedida", entre outras, com base em um conjunto de dados do `nps_chat`.
     
-    - **Tokenização e Embeddings**: Implementa técnicas de pré-processamento, incluindo tokenização, remoção de stopwords e criação de vetores de palavras.
+    - **Pré-processamento de Texto**: Implementa técnicas de pré-processamento, incluindo tokenização, remoção de stopwords, e normalização de texto para garantir que as entradas sejam adequadas para os modelos.
     
-    - **Pipeline de Classificação**: Utiliza também um classificador Naive Bayes para análise complementar baseada em TF-IDF.
+    - **Tradução Automática**: Detecta automaticamente o idioma da mensagem do usuário e a traduz para o português, garantindo compatibilidade com os modelos treinados.
     
-    - **Tradução Automática**: Detecta e traduz textos automaticamente para garantir compatibilidade com diferentes idiomas.
+    - **Histórico de Conversa**: Mantém um histórico das interações do usuário, permitindo respostas contextuais e uma análise contínua do sentimento ao longo da conversa.
     
-    - **Histórico de Conversa**: Mantém um histórico das interações do usuário para oferecer respostas contextuais.
+    - **Pipeline de Classificação**: Além do modelo LSTM, utiliza um classificador Naive Bayes baseado em TF-IDF para análise complementar de intenções.
+
+    - **Interface Interativa**: A interface do chatbot é construída com Streamlit, permitindo uma interação fluida e amigável com o usuário. O histórico de conversas é exibido em tempo real, e o usuário pode limpar o histórico a qualquer momento.
+    
+    - **Modelo de Conversação**: Em casos onde a resposta gerada pelo modelo de intenção é muito genérica, o chatbot utiliza um modelo de conversação baseado no DialoGPT para gerar respostas mais contextualizadas.
+    
+    - **Melhorias Futuras**: O código está em constante evolução, com planos para melhorar a precisão da análise de sentimentos, adicionar mais intenções e integrar modelos de linguagem mais avançados, como o GPT-4.
     """)
 
 def preprocess_text(text):
