@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import re
 import gensim
 import nltk
 import numpy as np
@@ -27,6 +28,7 @@ from sklearn.preprocessing import LabelEncoder
 from keras.callbacks import Callback
 import time
 import random
+from difflib import SequenceMatcher
 
 st.set_page_config(
 page_title="ChatBot", 
@@ -176,7 +178,7 @@ class ProgressBarCallback(Callback):
 
 # Treinamento do modelo de intenção
 if not st.session_state.model_trained:
-    epochs = 6
+    epochs = 10
     progress_callback = ProgressBarCallback(total_epochs=epochs)
     with st.spinner("Treinando modelo de intenção..."):
         st.session_state.intent_model.fit(
@@ -242,7 +244,7 @@ def create_tw_sentiment_model(vocab_size, embedding_dim, max_length, num_classes
 if 'sentiment_model_tw' not in st.session_state:
     num_classes_tw = len(label_encoder_tw.classes_)
     st.session_state.sentiment_model_tw = create_tw_sentiment_model(vocab_size_tw, embedding_dim, max_length_tw, num_classes_tw)
-    epochs_tw = 4
+    epochs_tw = 5
     progress_callback_tw = ProgressBarCallback(total_epochs=epochs_tw)
     with st.spinner("Treinando modelo de sentimento..."):
         st.session_state.sentiment_model_tw.fit(
@@ -282,18 +284,39 @@ def detect_and_translate(text, target_lang='pt'):
     translated_text = GoogleTranslator(source=detected_lang, target=target_lang).translate(text) if detected_lang != target_lang else text
     return translated_text
 
-# Inicializa a pipeline conversacional
-if 'conversational_pipeline' not in st.session_state:
-    st.session_state.conversational_pipeline = pipeline(
-        "conversational", 
-        model="microsoft/DialoGPT-medium", 
-        framework="pt" 
-    )
+if 'knowledge_base' not in st.session_state:
+    st.session_state.knowledge_base = {}  # Ex: {"brasil": "América do Sul"}
+
+def similar(a, b):
+    """Retorna a similaridade entre duas strings (0 a 1)."""
+    return SequenceMatcher(None, a, b).ratio()
+
+def atualizar_knowledge_base(texto):
+    #regex para capturar afirmações do tipo "O Brasil está localizado na América do Sul"
+    padrao = r"(\w[\w\s]+)\s+est[aá] localizado(?:a)?\s+(?:na|no|em)\s+([\w\s]+)"
+    correspondencia = re.search(padrao, texto, re.IGNORECASE)
+    if correspondencia:
+        entidade = correspondencia.group(1).strip().lower()
+        localizacao = correspondencia.group(2).strip()
+        st.session_state.knowledge_base[entidade] = localizacao
+        # Opcional: exibir no log ou dar feedback ao usuário
+        # print(f"Atualizando conhecimento: {entidade} -> {localizacao}")
+
+def buscar_resposta_no_knowledge_base(texto):
+    # Extrair possíveis entidades 
+    palavras = texto.split()
+    for chave, localizacao in st.session_state.knowledge_base.items():
+        for palavra in palavras:
+            if similar(chave, palavra.lower()) > 0.8:
+                return f"{chave.title()} está localizado(a) em {localizacao}."
+    return None
 
 def chatbot_response(user_input):
-    
+
     translated_input = detect_and_translate(user_input)
     
+    #Atualiza o banco de conhecimento se o usuário estiver fornecendo um fato
+    atualizar_knowledge_base(translated_input)
     
     blob = TextBlob(translated_input)
     polarity = blob.sentiment.polarity  # valor entre -1 (muito negativo) e 1 (muito positivo)
@@ -304,70 +327,123 @@ def chatbot_response(user_input):
     else:
         sentiment_label = "neutro"
     
-    # Pré-processamento e preparação para previsão de intenção
+    #Pré-processamento para previsão de intenção 
     processed_input = preprocess_text(translated_input)
     input_seq = st.session_state.tokenizer.texts_to_sequences([processed_input])
     input_pad = pad_sequences(input_seq, maxlen=max_length, padding='post')
     
-    # Previsão da intenção com o modelo LSTM treinado
     with st.spinner("Processando intenção..."):
         intent_pred = st.session_state.intent_model.predict(input_pad)
     intent_class = np.argmax(intent_pred, axis=1)
     intent_label = label_encoder.inverse_transform(intent_class)[0]
     
-    # Intenção com regras baseadas em palavras-chave
+    # intenção com regras baseadas em palavras-chave
     input_lower = translated_input.lower()
-    if any(s in input_lower for s in ["olá", "oi", "bom dia", "boa tarde", "boa noite"]):
+    if any(greet in input_lower for greet in ["olá", "oi", "bom dia", "boa tarde", "boa noite"]):
         intent_label = "saudação"
     elif "nome" in input_lower:
         intent_label = "nome"
-    elif any(s in input_lower for s in ["ajuda", "suporte", "preciso de ajuda"]):
+    elif any(ajuda in input_lower for ajuda in ["ajuda", "suporte", "preciso de ajuda"]):
         intent_label = "ajuda"
-    elif any(s in input_lower for s in ["tudo bem", "como vai", "como está"]):
+    elif any(cumprimento in input_lower for cumprimento in ["tudo bem", "como vai", "como está"]):
         intent_label = "saudação"
     
-    # Definição de templates de resposta para cada intenção
+    # Templates de resposta para cada intenção
     response_templates = {
-        "saudação": ["Olá! Como posso ajudar?", "Oi! Tudo bem?", "Bom dia!", "Oi! Como vai?"],
-        "ajuda": ["Claro! Qual sua dúvida?", "Estou aqui para ajudar!", "Como posso ser útil hoje?"],
-        "documento": ["Envie o documento para análise!", "Vou processar seu documento!", "Por favor, envie o documento que deseja analisar."],
-        "raiva": ["Sinto muito! Como posso resolver sua insatisfação?", "Entendo sua frustração, vamos resolver isso juntos.", "Peço desculpas pelo ocorrido. Como posso ajudar?"],
-        "elogio": ["Muito obrigado! Fico feliz em ajudar!", "Agradeço pelo feedback positivo!", "Fico feliz que esteja satisfeito!"],
-        "tristeza": ["Sinto muito que você esteja se sentindo assim. Posso ajudar em algo?", "Lamento ouvir isso. Estou aqui para o que precisar.", "Sinto muito. Conte comigo para o que precisar."],
-        "nome": ["Meu nome é Chatbot. Como posso ajudar você hoje?", "Eu sou o Chatbot, seu assistente virtual.", "Pode me chamar de Chatbot. Como posso ajudar?"],
-        "felicidade": ["Que bom que você está feliz! Como posso ajudar?", "Fico feliz em saber que você está contente!", "É ótimo ver você feliz! O que posso fazer por você?"],
-        "despedida": ["Até logo! Espero ter ajudado.", "Tchau! Volte sempre que precisar.", "Até mais! Estou aqui se precisar."],
-        "dúvida": ["Pode me explicar melhor?", "Não entendi completamente. Pode reformular?", "Poderia detalhar um pouco mais?"]
+        "saudação": [
+            "Olá! Como posso ajudar?",
+            "Oi! Tudo bem?",
+            "Bom dia! Em que posso ser útil?",
+            "Oi! Como vai você?"
+        ],
+        "ajuda": [
+            "Claro! Qual sua dúvida?",
+            "Estou aqui para ajudar. Como posso ser útil?",
+            "Diga-me como posso ajudar você!"
+        ],
+        "documento": [
+            "Envie o documento para análise.",
+            "Vou processar seu documento. Por favor, envie-o.",
+            "Por favor, anexe o documento que deseja analisar."
+        ],
+        "raiva": [
+            "Sinto muito que você esteja frustrado. O que posso fazer para ajudar?",
+            "Entendo sua raiva. Vamos ver como resolver isso juntos.",
+            "Peço desculpas se algo não saiu bem. Conte-me o que aconteceu."
+        ],
+        "elogio": [
+            "Muito obrigado! Fico feliz em ajudar.",
+            "Agradeço pelo feedback positivo!",
+            "É ótimo saber que você está satisfeito."
+        ],
+        "tristeza": [
+            "Sinto muito que você esteja se sentindo assim. Quer conversar sobre isso?",
+            "Lamento ouvir isso. Estou aqui se precisar desabafar.",
+            "Sei que momentos difíceis acontecem. Estou aqui para ajudar no que for possível."
+        ],
+        "nome": [
+            "Meu nome é Chatbot. Em que posso ajudar hoje?",
+            "Eu sou o Chatbot, seu assistente virtual.",
+            "Pode me chamar de Chatbot. Como posso ajudar?"
+        ],
+        "felicidade": [
+            "Que bom que você está feliz! Em que posso ajudar?",
+            "Fico contente em saber que você está bem!",
+            "Sua felicidade me alegra! O que posso fazer por você?"
+        ],
+        "despedida": [
+            "Até logo! Espero ter ajudado.",
+            "Tchau! Volte sempre que precisar.",
+            "Até mais! Estarei aqui se precisar de algo."
+        ],
+        "dúvida": [
+            "Pode me explicar melhor?",
+            "Não entendi completamente. Poderia reformular?",
+            "Poderia dar mais detalhes para que eu possa ajudar?"
+        ]
     }
     
-    # Seleção da resposta baseada na intenção, sentimento e contexto
-    if intent_label in response_templates:
-        if st.session_state.chat_history:
-            if sentiment_label in ["negativo", "raiva", "triste"]:
-                response = "Percebo que você está passando por um momento difícil. Estou aqui para ajudar. Pode me contar mais?"
-            elif sentiment_label in ["positivo", "felicidade", "elogio"]:
-                response = random.choice(response_templates.get("felicidade", ["Que bom!"]))
-            else:
-                response = random.choice(response_templates[intent_label])
-        else:
-            response = random.choice(response_templates[intent_label])
-    else:
-        response = "Poderia me explicar melhor? Quero entender para poder ajudar!"
-    
-    # Fallback com modelo de conversação se a resposta for muito genérica
-    if response.startswith("Poderia me explicar melhor"):
+    response = None
+
+    # Verifica se a pergunta pode ser respondida usando o conhecimento previamente armazenado
+    knowledge_response = buscar_resposta_no_knowledge_base(translated_input)
+    if knowledge_response:
+        response = knowledge_response
+        # Atualiza o histórico
+        st.session_state.chat_history.append(("Você", translated_input))
+        st.session_state.chat_history.append(("Chatbot", response))
+        return response, sentiment_label
+
+    # Se não houver correspondência no banco de conhecimento, decide entre usar templates ou a pipeline conversacional
+    if not st.session_state.chat_history or intent_label not in response_templates:
         with st.spinner("Gerando resposta..."):
-            conversation = Conversation(translated_input)
+            st.session_state.chat_history.append(("Você", translated_input))
+            # Limita o histórico para evitar excesso de informações irrelevantes
+            contexto = st.session_state.chat_history[-6:]  # últimos 3 turnos (você e chatbot)
+            conversation_text = "\n".join([f"{sender}: {msg}" for sender, msg in contexto])
+            conversation = Conversation(conversation_text)
             result = st.session_state.conversational_pipeline(conversation)
-            # Usa a última resposta gerada pelo modelo de conversação
-            response = result.generated_responses[-1]
+            generated_response = result.generated_responses[-1]
+            # Pós-processamento simples para remover repetições indesejadas
+            generated_response = re.sub(r'(Voc eu\s?)+', 'Você', generated_response, flags=re.IGNORECASE)
+            st.session_state.chat_history.append(("Chatbot", generated_response))
+            response = generated_response
+    else:
+        # Se houver template, seleciona uma resposta de acordo com a intenção e o sentimento
+        if sentiment_label == "negativo" or intent_label in ["raiva", "tristeza"]:
+            response = random.choice(response_templates["tristeza"])
+        elif sentiment_label == "positivo" and intent_label == "elogio":
+            response = random.choice(response_templates.get("felicidade", response_templates["elogio"]))
+        else:
+            response = random.choice(response_templates.get(intent_label, ["Desculpe, não entendi."]))
+        st.session_state.chat_history.append(("Você", translated_input))
+        st.session_state.chat_history.append(("Chatbot", response))
     
     return response, sentiment_label
 ##############################################
 # INTERFACE DO CHAT
 ##############################################
 
-st.subheader("Chat com Chatbot Inteligente")
 chat_container = st.container()
 
 with chat_container:
