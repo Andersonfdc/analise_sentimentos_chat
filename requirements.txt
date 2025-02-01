@@ -4,11 +4,10 @@ gensim
 nltk==3.8.1
 numpy
 tensorflow==2.12
+keras=3.0.0
 matplotlib
 seaborn
-tf-keras
 scikit-learn
-keras=3.0.0
 langdetect
 deep-translator
 pandas
