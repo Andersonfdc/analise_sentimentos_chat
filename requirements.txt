@@ -1,3 +1,4 @@
+pip
 streamlit
 gensim
 nltk==3.8.1
