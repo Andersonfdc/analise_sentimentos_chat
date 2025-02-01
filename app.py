@@ -176,7 +176,7 @@ class ProgressBarCallback(Callback):
 
 # Treinamento do modelo de intenção
 if not st.session_state.model_trained:
-    epochs = 10
+    epochs = 6
     progress_callback = ProgressBarCallback(total_epochs=epochs)
     with st.spinner("Treinando modelo de intenção..."):
         st.session_state.intent_model.fit(
@@ -242,7 +242,7 @@ def create_tw_sentiment_model(vocab_size, embedding_dim, max_length, num_classes
 if 'sentiment_model_tw' not in st.session_state:
     num_classes_tw = len(label_encoder_tw.classes_)
     st.session_state.sentiment_model_tw = create_tw_sentiment_model(vocab_size_tw, embedding_dim, max_length_tw, num_classes_tw)
-    epochs_tw = 5
+    epochs_tw = 4
     progress_callback_tw = ProgressBarCallback(total_epochs=epochs_tw)
     with st.spinner("Treinando modelo de sentimento..."):
         st.session_state.sentiment_model_tw.fit(

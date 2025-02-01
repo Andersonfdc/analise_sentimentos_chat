@@ -12,5 +12,5 @@ langdetect
 deep-translator
 pandas
 transformers==4.28.0
-torch
+torch==2.0.0
 textblob-aptagger
