@@ -21,7 +21,7 @@ import pandas as pd
 from langdetect import detect
 from transformers import pipeline
 from tensorflow.keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.utils import pad_sequences
 from sklearn.preprocessing import LabelEncoder
 from keras.callbacks import Callback
 
