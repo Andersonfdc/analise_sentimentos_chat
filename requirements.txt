@@ -14,4 +14,3 @@ pandas
 transformers
 torch
 textblob-aptagger
-textblob.download_corpora
