@@ -36,7 +36,7 @@ import torch
 st.set_page_config(
 page_title="ChatBot", 
 page_icon="	:robot_face:",
-nitial_sidebar_state="expanded",
+nitial_sidebar_state="expanded"
 )
 st.title("Análise de sentimentos - chatbot")
 
