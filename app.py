@@ -67,7 +67,7 @@ if 'tokenizer' not in st.session_state:
     st.session_state.tokenizer = Tokenizer()
 
 st.info("⚠️ O código ainda precisa de melhorias e ajustes. 🧠 Trabalhando para aprimorar todas as funcionalidades.")
-st.info("📊 A funcionalidade de análise de sentimento (último gráfico à esquerda, aparece ao enviar uma mensagem) está operando com certa imprecisão e necessita de melhorias...")
+st.info("📊 A funcionalidade de análise de sentimento (último gráfico do menu à esquerda, aparece ao enviar uma mensagem) está operando com certa imprecisão e necessita de melhorias...")
 
 with st.expander("Detalhes do Modelo"):
     st.write("""
