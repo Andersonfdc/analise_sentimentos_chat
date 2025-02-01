@@ -277,10 +277,17 @@ def get_sentiment_tw(text):
 ##############################################
 
 if 'conversational_pipeline' not in st.session_state:
-    st.session_state.conversational_pipeline = pipeline(
-        "conversational",
-        model="microsoft/DialoGPT-medium"
-    )
+    try:
+        # Força o uso da CPU para evitar problemas com falta de GPU
+        device = 0 if torch.cuda.is_available() else -1  
+        st.session_state.conversational_pipeline = pipeline(
+            "conversational", 
+            model="microsoft/DialoGPT-small",  # Alterado para um modelo menor
+            device=device  # Usa GPU se disponível, senão CPU
+        )
+    except Exception as e:
+        st.error(f"Erro ao carregar o modelo de conversação: {e}")
+        st.stop()
 
 def detect_and_translate(text, target_lang='pt'):
     try:
