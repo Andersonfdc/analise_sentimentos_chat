@@ -276,6 +276,12 @@ def get_sentiment_tw(text):
 # CHATBOT RESPONSE
 ##############################################
 
+if 'conversational_pipeline' not in st.session_state:
+    st.session_state.conversational_pipeline = pipeline(
+        "conversational",
+        model="microsoft/DialoGPT-medium"
+    )
+
 def detect_and_translate(text, target_lang='pt'):
     try:
         detected_lang = detect(text)
