@@ -6,8 +6,8 @@ import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import seaborn as sns
-from keras.models import Sequential
-from keras.layers import LSTM, Dense, Embedding, Dropout, Bidirectional
+from tensorflow.keras.preprocessing.text import Sequential
+from tensorflow.keras.preprocessing.text import LSTM, Dense, Embedding, Dropout, Bidirectional
 from nltk.sentiment import SentimentIntensityAnalyzer
 from gensim.models import Word2Vec
 from sklearn.feature_extraction.text import TfidfVectorizer
