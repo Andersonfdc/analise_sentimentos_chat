@@ -29,6 +29,7 @@ from keras.callbacks import Callback
 import time
 import random
 from difflib import SequenceMatcher
+import torch
 
 st.set_page_config(
 page_title="ChatBot", 
